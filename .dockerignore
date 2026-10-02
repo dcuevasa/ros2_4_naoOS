@@ -1,0 +1,5 @@
+.git
+assets
+gentoo_prefix_32b
+ebuilds
+*.md

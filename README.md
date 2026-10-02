@@ -1,158 +1,226 @@
-# pepper_os_humble
+# ros2_4_naoOS: ROS 2 Jazzy for NAO & Pepper
 
-Docker with ROS2 Humble and naoqi_driver2 for Pepper 2.5.
+Containerized and native environment bringing **ROS 2 Jazzy Jalisco** and **`naoqi_driver2`** directly onboard SoftBank Robotics' **NAO (V5/V6)** and **Pepper (1.8/2.5)** humanoid robots.
 
-- [pepper\_os\_humble](#pepper_os_humble)
-  - [Recommendation](#recommendation)
-  - [Release](#release)
-  - [Build the environment](#build-the-environment)
-  - [Compress to lzma](#compress-to-lzma)
-  - [Installation on pepper](#installation-on-pepper)
-  - [Test ROS2](#test-ros2)
-  - [Test naoqi\_driver2](#test-naoqi_driver2)
-    - [Start naoqi\_driver2](#start-naoqi_driver2)
-    - [Test naoqi\_driver2](#test-naoqi_driver2-1)
-  - [Future works](#future-works)
+> [!TIP]
+> **Complete Documentation Wiki**: In-depth architecture guides, build pipeline details, embedded AI walkthroughs, and troubleshooting are available in the [Project Wiki](https://github.com/dcuevasa/ros2_4_naoOS/wiki) (or in the local `ros2_4_naoOS.wiki` directory).
 
-## Recommendation
+---
 
-It is recommended to set Pepper's IP with:
+## Table of Contents
 
-```bash
-$ export PEPPER_IP=x.x.x.x #(i.e 169.254.0.0)
-```
+- [ros2\_4\_naoOS: ROS 2 Jazzy for NAO \& Pepper](#ros2_4_naoos-ros-2-jazzy-for-nao--pepper)
+  - [Table of Contents](#table-of-contents)
+  - [Overview \& Dual-Robot Support](#overview--dual-robot-support)
+  - [Environment Setup \& Recommendation](#environment-setup--recommendation)
+  - [Pre-compiled Release Image](#pre-compiled-release-image)
+  - [Building from Source (Docker)](#building-from-source-docker)
+  - [Compressing Deployment Archive](#compressing-deployment-archive)
+  - [Installation on NAO / Pepper](#installation-on-nao--pepper)
+  - [Testing ROS 2 Jazzy](#testing-ros-2-jazzy)
+  - [Running naoqi\_driver2](#running-naoqi_driver2)
+    - [Starting the Driver](#starting-the-driver)
+    - [Inspecting Topics](#inspecting-topics)
+    - [Remote PC Visualization (RViz2)](#remote-pc-visualization-rviz2)
+  - [Robot Posture \& Control Helpers](#robot-posture--control-helpers)
+  - [Acknowledgment](#acknowledgment)
 
-in the .bash_profile of Pepper or on any computer that will be used to communicate with Pepper.
+---
 
-For clarity and simplification, the documentation assumes that the variable is set.
+## Overview & Dual-Robot Support
 
-## Release 
+This project packages an isolated **Gentoo Prefix 32-bit sysroot** that installs into `/home/nao/gentoo` and maps to `/tmp/gentoo`. This enables running modern **ROS 2 Jazzy Jalisco**, **GCC 11.4**, **Python 3.11**, and embedded ML engines (ONNX Runtime, TensorFlow Lite, Vosk/Kaldi) on the robot's 32-bit Intel Atom CPU without altering the robot's factory NAOqi OS firmware.
 
-A plug-and-play environment is available at [https://drive.google.com/file/d/1pW4Q36QXR29MyWEb5wtkeABo-9eMvh5G/view?usp=sharing](https://drive.google.com/file/d/1pW4Q36QXR29MyWEb5wtkeABo-9eMvh5G/view?usp=sharing) if you don't want to compile everything from scratch. From there go to [Installation on pepper](#installation-on-pepper).
+### Supported Hardware:
+* **SoftBank Robotics Pepper**: Versions 1.8, 1.8a, and 2.5 (NAOqi OS 2.5.5.5 / 2.5.10).
+* **SoftBank Robotics NAO**: Versions V5 and V6 (NAOqi OS 2.1.4, 2.5.x, 2.8.x).
 
-## Build the environment
+The runtime auto-detects whether it is running on a NAO or a Pepper via `ALMemory` (`RobotConfig/Body/Type`) and dynamically applies the appropriate joint configs, posture transitions, and network bindings.
 
-The environment can be built using the Dockerfile. This requires gentoo_on_tmp.tar.lzma archive in the same directory. This one can be created using: 
+---
 
-```bash
-docker run --entrypoint /tmp/gentoo/executeonprefix neaum/gentoo_prefix_32b:latest  "tar -c --lzma -f - -C /tmp gentoo" > ~/gentoo_on_tmp.tar.lzma
-```
+## Environment Setup & Recommendation
 
-Here we are using a 32b version of gentoo prefix build in 11/2023 that is a snapshot of the current gentoo tree at this time. For a more up-to-date version, please consider rebuilding the prefix from scratch using scripts [in dedicated folder](gentoo_prefix_32b/).
-
-## Compress to lzma
-
-Compressing the environment to lzma is necessary as Pepper has limited resources. The entire environment is about ~8GB and will be reduced to about ~2GB. In comparison, Pepper has about 25GB of space available.
-
-```bash
-$ docker run -it pepper_os_humble:latest
-
-#Outside docker in another terminal
-$ docker cp CONTAINER_ID:/data/home/nao/pepper_os.tar.lzma ./pepper_os.tar.lzma
-```
-
-CONTAINER_ID being the ID of the running container (nao@CONTAINER_ID)
-
-
-## Installation on pepper
-
-First, check whether there is enough space available on Pepper to install the archive.
+Set your robot's IP on your workstation and in your shell configuration:
 
 ```bash
-$ ssh nao@$PEPPER_IP
-$ df -t ext3
+export ROBOT_IP=x.x.x.x     # (e.g. 192.168.1.150)
+export PEPPER_IP=$ROBOT_IP  # Alias for Pepper
+export NAO_IP=$ROBOT_IP     # Alias for NAO
 ```
 
-The archive requires ~8GB to be copied and uncompressed.
+Add this export to your development machine's `~/.bashrc` or `~/.zshrc`. For clarity, this documentation refers to `$ROBOT_IP`.
 
-Once there is enough space available, the archive can be copied and uncompressed safely. 
+---
+
+## Pre-compiled Release Image
+
+A plug-and-play archive is hosted on Google Drive:
+* **Download**: [nao_os_jazzy.tar.lzma (Google Drive)](https://drive.google.com/file/d/1pW4Q36QXR29MyWEb5wtkeABo-9eMvh5G/view?usp=sharing)
+* Size: ~2.1 GB compressed (expands to ~8.0 GB on ext3).
+
+Once downloaded, proceed directly to [Installation on NAO / Pepper](#installation-on-nao--pepper).
+
+---
+
+## Building from Source (Docker)
+
+To compile the entire ROS 2 Jazzy environment using Docker:
+
+1. Ensure the base prefix archive `gentoo_prefix_base.tar.lzma` is present (generated from `gentoo_prefix_32b/` via `Dockerfile.base_build`).
+2. Build the Docker image:
 
 ```bash
-$ scp pepper_os.tar.lzma nao@$PEPPER_IP:/home/nao/
-$ ssh nao@$PEPPER_IP
-$ tar -J -xvf ./pepper_os.tar.lzma
-$ rm pepper_os.tar.lzma
+# Default build (Pepper base image)
+docker build -t nao_os_jazzy:latest .
+
+# Alternatively, target a NAO-specific base container
+docker build --build-arg BASE_IMAGE=awesomebytes/pepper_2.5.5.5 -t nao_os_jazzy:latest .
 ```
 
-## Test ROS2
+---
 
-ROS2 can be tested with the following commands:
+## Compressing Deployment Archive
+
+The complete environment expands to ~8 GB and is compressed with parallel LZMA (`pxz`) down to ~2 GB to fit easily onto the robot's internal storage:
 
 ```bash
-$ ssh nao@$PEPPER_IP
-$ ros2 run demo_nodes_cpp talker
-#The terminal should display: 'Publishing: "Hello world: x"'
+# Start container
+docker run -it nao_os_jazzy:latest
+
+# In a separate host terminal, extract the archive:
+docker cp CONTAINER_ID:/data/home/nao/nao_os_jazzy.tar.lzma ./nao_os_jazzy.tar.lzma
 ```
 
-![alt text](assets/ros2_talker.png)
+*(Note: `pepper_os.tar.lzma` is symlinked to `nao_os_jazzy.tar.lzma` for complete backward compatibility).*
 
-2nd terminal
+---
+
+## Installation on NAO / Pepper
+
+1. Check available disk space on the robot (minimum **8 GB free** required in `/home`):
+   ```bash
+   ssh nao@$ROBOT_IP "df -h /home"
+   ```
+
+2. Transfer and extract the archive on the robot:
+   ```bash
+   # Copy archive to robot
+   scp nao_os_jazzy.tar.lzma nao@$ROBOT_IP:/home/nao/
+
+   # SSH into robot
+   ssh nao@$ROBOT_IP
+
+   # Extract directly in /home/nao
+   cd /home/nao
+   tar -J -xvf ./nao_os_jazzy.tar.lzma
+
+   # Remove compressed archive to recover ~2 GB space
+   rm ./nao_os_jazzy.tar.lzma
+   ```
+
+3. Log out and reconnect via SSH. The updated `.bash_profile` will automatically activate the Gentoo Prefix environment and source ROS 2 Jazzy (`Entering ROS 2 Jazzy Prefix /tmp/gentoo`).
+
+---
+
+## Testing ROS 2 Jazzy
+
+Verify inter-process communication using the built-in C++ demo nodes:
+
+**Terminal 1 (Publisher):**
 ```bash
-$ ssh nao@$PEPPER_IP
-$ ros2 run demo_nodes_cpp listener
-#The terminal should display: 'I heard: [Hello world: x]'
+ssh nao@$ROBOT_IP
+ros2 run demo_nodes_cpp talker
 ```
 
-![alt text](assets/ros2_listener.png)
+**Terminal 2 (Subscriber):**
+```bash
+ssh nao@$ROBOT_IP
+ros2 run demo_nodes_cpp listener
+```
 
-The python equivalent can be tested with demo_nodes_py instead of demo_nodes_cpp.
+You can also test Python nodes with `demo_nodes_py`.
 
-## Test naoqi_driver2
+---
 
-### Start naoqi_driver2
+## Running naoqi_driver2
+
+### Starting the Driver
+Start the hardware driver directly using the pre-configured aliases:
 
 ```bash
-$ ssh nao@$PEPPER_IP
-$ ros2 launch naoqi_driver naoqi_driver.launch.py nao_ip:=$PEPPER_IP network_interface:=MACHINE_INTERFACE
+ssh nao@$ROBOT_IP
+
+# Universal driver alias (auto-detects NAO vs Pepper and active network interface)
+robot_driver
+
+# Or use specific aliases
+nao_driver     # For NAO
+pepper_driver  # For Pepper
 ```
 
-MACHINE_INTERFACE should be 'wlan0' if Pepper is on wifi or 'eth0' if Pepper connected directly via an ethernet cable.
+Or invoke ROS 2 launch manually:
+```bash
+ros2 launch naoqi_driver naoqi_driver.launch.py \
+  nao_ip:=$ROBOT_IP \
+  network_interface:=$ROS_NETWORK_INTERFACE
+```
 
-Alternatively, an alias has been made in .bash_profile
+### Inspecting Topics
+In a separate terminal on the robot:
+```bash
+ros2 topic list
+```
+
+Available topics include:
+* `/naoqi_driver/joint_states` (50 Hz encoder readings for all joints)
+* `/naoqi_driver/camera/front/image_raw` & `/camera/bottom/image_raw`
+* `/naoqi_driver/laser` & `/sonar`
+* `/naoqi_driver/imu/torso`
+* `/cmd_vel` (omni-directional mobile base teleop on Pepper / walking on NAO)
+
+### Remote PC Visualization (RViz2)
+On an external workstation running Ubuntu 24.04 with ROS 2 Jazzy:
 
 ```bash
-$ nao_driver
+source /opt/ros/jazzy/setup.bash
+export ROS_DOMAIN_ID=0  # Matches robot domain ID
+
+# Verify robot topics are visible
+ros2 topic list
+
+# Launch RViz2
+rviz2
 ```
 
-The ip and network interfaces will be automatically fetched. 
+In RViz2, add topic displays for cameras, laser scans, and coordinate frames (`/tf`).
 
-![alt text](assets/ros2_naoqi_driver_1.png)
+---
 
-### Test naoqi_driver2
+## Robot Posture & Control Helpers
+
+Pre-configured shell helpers available on both NAO and Pepper:
 
 ```bash
-$ ssh nao@$PEPPER_IP
-$ ros2 topic list
+# Wake up and engage joint motors
+wake
+
+# Re-align posture to upright zero-angle configuration (auto-detects NAO vs Pepper)
+straight
+
+# Dedicated posture calibration
+straight_nao     # Executes StandInit and zeros head for NAO
+straight_pepper  # Zeros head, hip, and knee joints for Pepper
+
+# Relax motors to crouching resting posture
+rest
+
+# Text-to-speech through onboard speakers
+say "Hello! I am running ROS 2 Jazzy Jalisco."
 ```
-Will return a list of all the topic available.
 
-![alt text](assets/ros2_naoqi_driver_2.png)
-
-```bash
-#On a computer
-$ source /opt/ros/humble/setup.bash
-$ export ROS_MASTER_URI=http://$PEPPER_IP:11311
-$ rviz2 rviz
-```
-
-To start rviz2 and display the topic of interest (Add -> By topic).
-
-## Citations
-
-If you use this project, please consider citing:
-
-```
-@incollection{buche2023robocup,
-  title={RoboCup@ Home SSPL Champion 2023: RoboBreizh, a Fully Embedded Approach},
-  author={Buche, C{\'e}dric and Neau, Ma{\"e}lic and Ung, Thomas and Li, Louis and Wang, Sinuo and Bono, C{\'e}dric Le},
-  booktitle={Robot World Cup},
-  pages={374--385},
-  year={2023},
-  publisher={Springer}
-}
-
-```
+---
 
 ## Acknowledgment
 
-This project is heavily inspired by the awesome work of [Sam Pfeiffer](https://github.com/awesomebytes) and is really nice CLI of a [gentoo prefix for Pepper](https://github.com/awesomebytes/ros_overlay_on_gentoo_prefix_32b).
+This project is heavily inspired by the pioneering work of [Sam Pfeiffer](https://github.com/awesomebytes) on [ros_overlay_on_gentoo_prefix_32b](https://github.com/awesomebytes/ros_overlay_on_gentoo_prefix_32b).
