@@ -96,11 +96,20 @@ RUN mkdir -p ~/ros2_jazzy/src && \
         -DTRACETOOLS_STATUS_CHECKING_TOOL=OFF \
         -DLTTNGPY_DISABLED=ON
 
-# Download and build naoqi_driver2, rosbridge_suite (WebSocket), and web_video_server (HTTP video stream)
+# Download and build naoqi_bringup2_sinfonIA stack, rosbridge_suite (WebSocket), and web_video_server (HTTP video stream)
 RUN . ~/ros2_jazzy/install/local_setup.bash && \
     mkdir -p ~/catkin_ros2/src && \
     cd ~/catkin_ros2/src/ && \
-    git clone https://github.com/ros-naoqi/naoqi_driver2.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_driver2_sinfonIA.git && \
+    git clone --branch ros2 https://github.com/ros-drivers/audio_common.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_utilities_msgs.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_manipulation.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_miscellaneous.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_navigation.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_perception.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_speech.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_interface.git && \
+    git clone https://github.com/SinfonIAUniandes/naoqi_bringup2_SinfonIA.git && \
     git clone --branch rolling https://github.com/ros-perception/vision_opencv && \
     git clone --branch release/jazzy/naoqi_libqi https://github.com/ros-naoqi/libqi-release && \
     git clone --branch release/jazzy/naoqi_libqicore https://github.com/ros-naoqi/libqicore-release && \

@@ -43,10 +43,17 @@ else
     env -i $RETAIN $SHELL -l
 fi
 
-# Driver aliases for both NAO and Pepper
-alias nao_driver="ros2 launch naoqi_driver naoqi_driver.launch.py nao_ip:=$ROS_IP network_interface:=$MACHINE_INTERFACE"
-alias pepper_driver="ros2 launch naoqi_driver naoqi_driver.launch.py nao_ip:=$ROS_IP network_interface:=$MACHINE_INTERFACE"
-alias robot_driver="ros2 launch naoqi_driver naoqi_driver.launch.py nao_ip:=$ROS_IP network_interface:=$MACHINE_INTERFACE"
+# SinfonIA Bringup and Driver aliases for both NAO and Pepper
+alias nao_bringup="ros2 launch naoqi_bringup2_sinfonIA naoqi_full_bringup.launch.py nao_ip:=127.0.0.1"
+alias pepper_bringup="ros2 launch naoqi_bringup2_sinfonIA naoqi_pepper_bringup.launch.py nao_ip:=127.0.0.1"
+alias robot_bringup="if [ \"\$ROBOT_TYPE\" = \"nao\" ]; then nao_bringup; else pepper_bringup; fi"
+alias naoqi_demo="ros2 run naoqi_bringup2_sinfonIA naoqi_capabilities_demo.py"
+
+# Backward compatible driver aliases
+alias nao_driver="nao_bringup"
+alias pepper_driver="pepper_bringup"
+alias robot_driver="robot_bringup"
+alias raw_driver="ros2 launch naoqi_driver naoqi_driver.launch.py nao_ip:=127.0.0.1 network_interface:=$MACHINE_INTERFACE"
 
 # Web services: WebSocket bridge (:9090 for roslibjs) and Video Streamer (:8080)
 alias rosbridge="ros2 launch rosbridge_server rosbridge_websocket_launch.xml"
