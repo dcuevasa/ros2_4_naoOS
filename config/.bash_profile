@@ -8,13 +8,7 @@ fi
 alias tree="tree -L 2"
 alias ..="cd .."
 alias ll="ls -l"
-alias cdws="cd ~/robobreizh_pepper_ws/"
-
-splan(){
-    rostopic pub /pnp/planToExec std_msgs/String \"data:\'$1\'\" -1
-}
-
-export ROS_LANG_DISABLE=genlisp:geneus
+alias cdws="cd ~/catkin_ros2"
 
 MACHINE_IP=$(ifconfig eth0 2>/dev/null | grep 'inet ' | cut -d: -f3 | awk '{ print $2}')
 if [ -z "$MACHINE_IP" ]
@@ -70,10 +64,7 @@ alias rest="qicli call ALMotion.rest"
 alias straight="sh ~/.local/share/scripts/set_robot_straight.sh"
 alias straight_pepper="sh ~/.local/share/scripts/set_my_pepper_straight.sh"
 alias straight_nao="sh ~/.local/share/scripts/set_my_nao_straight.sh"
-alias vision_services="sh ~/.local/share/scripts/vision_services.sh"
 alias say="sh ~/.local/share/scripts/ALsay.sh"
-
-export PNP_LIBRARY=/home/nao/.local/bin/usr/local/lib/
 
 # Source ROS 2 Jazzy (with fallback to Humble)
 function jazzy(){
