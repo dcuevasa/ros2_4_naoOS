@@ -95,4 +95,19 @@ function humble(){
 jazzy
 
 # Resolve shared library precedence between Python and ROS 2 libqi
-export LD_LIBRARY_PATH=/tmp/gentoo/usr/lib/python3.11/site-packages/qi:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/tmp/gentoo/usr/lib:/tmp/gentoo/usr/lib/python3.11/site-packages/qi:$LD_LIBRARY_PATH
+
+# Middleware (RMW) selection helpers
+use_cyclone() {
+    export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+    echo "Active ROS 2 Middleware: Eclipse CycloneDDS ($RMW_IMPLEMENTATION)"
+}
+use_fastrtps() {
+    export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+    echo "Active ROS 2 Middleware: eProsima Fast DDS ($RMW_IMPLEMENTATION)"
+}
+
+# Web integration aliases
+alias rosbridge="ros2 launch rosbridge_server rosbridge_websocket_launch.xml"
+alias web_video="ros2 run web_video_server web_video_server"
+

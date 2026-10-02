@@ -66,30 +66,32 @@ ADD wheels/qi-3.1.0-cp311-cp311-linux_i686.whl /tmp/gentoo/qi-3.1.0-cp311-cp311-
 RUN pip install /tmp/gentoo/qi-3.1.0-cp311-cp311-linux_i686.whl && rm -f /tmp/gentoo/qi-3.1.0-cp311-cp311-linux_i686.whl
 
 # Install psutil and tornado required by ros2cli and rosbridge_server
-ADD wheels/psutil-7.1.1-cp36-abi3-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl /tmp/gentoo/psutil.whl
-ADD wheels/tornado-6.5.4-cp39-abi3-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl /tmp/gentoo/tornado.whl
-RUN pip install /tmp/gentoo/psutil.whl /tmp/gentoo/tornado.whl && rm -f /tmp/gentoo/psutil.whl /tmp/gentoo/tornado.whl
+ADD wheels/psutil-7.1.1-cp36-abi3-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl /tmp/gentoo/
+ADD wheels/tornado-6.5.4-cp39-abi3-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl /tmp/gentoo/
+RUN pip install /tmp/gentoo/psutil-*.whl /tmp/gentoo/tornado-*.whl && rm -f /tmp/gentoo/psutil-*.whl /tmp/gentoo/tornado-*.whl
 
-# Ensure core scientific/kinematic library orocos_kdl and media dependencies (ffmpeg, gstreamer, tmux, tree) are present
-RUN emerge sci-libs/orocos_kdl media-libs/dav1d media-video/ffmpeg app-misc/tmux app-text/tree \
-           media-libs/gstreamer media-libs/gst-plugins-base media-libs/gst-plugins-good \
-           media-plugins/gst-plugins-jpeg media-plugins/gst-plugins-v4l2 dev-vcs/git-lfs 2>/dev/null || true
+# Ensure core scientific/kinematic library orocos_kdl and media dependencies (ffmpeg, tmux, tree) are present
+RUN emerge sci-libs/orocos_kdl media-libs/dav1d media-video/ffmpeg app-misc/tmux app-text/tree
 
 # Download and compile ROS 2 Jazzy Jalisco
 RUN mkdir -p ~/ros2_jazzy/src && \
     cd ~/ros2_jazzy && \
     vcs import --input https://raw.githubusercontent.com/ros2/ros2/jazzy/ros2.repos src && \
-    # Remove unneeded packages (CycloneDDS, Iceoryx, GUI tools, visualization, tests, and non-32-bit packages)
-    rm -rf src/eclipse-cyclonedds src/eclipse-iceoryx src/ros-visualization src/ros2/rviz \
+    # Remove packages that do not support 32-bit (Iceoryx, GUI tools, visualization, tests, Connext)
+    rm -rf src/eclipse-iceoryx src/ros-visualization src/ros2/rviz \
            src/ros/ros_tutorials/turtlesim src/ros2/geometry2/tf2_bullet src/ros2/geometry2/test_tf2 \
            src/ros2/mimick_vendor src/ros2/ros2_tracing/lttngpy src/ros2-rust \
            src/ros2/demos src/ros2/examples src/ros2/system_tests src/ros2/performance_test_fixture \
-           src/ros2/rmw_cyclonedds src/ros2/rmw_connextdds src/ros2/tlsf \
+           src/ros2/rmw_connextdds src/ros2/tlsf \
            src/gazebo-release src/ros2/orocos_kdl_vendor/python_orocos_kdl_vendor \
            src/ros2/realtime_support && \
+    # Strip Iceoryx 64-bit shm dependency from rmw_cyclonedds_cpp for 32-bit x86 compatibility
+    sed -i '/iceoryx_binding_c/d' src/ros2/rmw_cyclonedds/rmw_cyclonedds_cpp/package.xml && \
     cd src && git clone https://github.com/ptrmu/ros2_shared.git 2>/dev/null || true && cd .. && \
     colcon build --symlink-install --cmake-args \
         -DBUILD_TESTING=OFF \
+        -DENABLE_SHM=OFF \
+        -DCMAKE_SHARED_LINKER_FLAGS="-latomic" \
         -DTRACETOOLS_DISABLED=ON \
         -DTRACETOOLS_STATUS_CHECKING_TOOL=OFF \
         -DLTTNGPY_DISABLED=ON
