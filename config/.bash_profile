@@ -95,7 +95,11 @@ function humble(){
 jazzy
 
 # Resolve shared library precedence between Python and ROS 2 libqi
-export LD_LIBRARY_PATH=/tmp/gentoo/usr/lib:/tmp/gentoo/usr/lib/python3.11/site-packages/qi:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/tmp/gentoo/usr/lib/python3.11/site-packages/qi:$LD_LIBRARY_PATH
+
+# Insulate host terminal tools from prefix library collisions
+alias nano="LD_LIBRARY_PATH= /usr/bin/nano"
+alias htop="LD_LIBRARY_PATH= /usr/bin/htop"
 
 # Middleware (RMW) selection helpers
 use_cyclone() {
@@ -110,4 +114,5 @@ use_fastrtps() {
 # Web integration aliases
 alias rosbridge="ros2 launch rosbridge_server rosbridge_websocket_launch.xml"
 alias web_video="ros2 run web_video_server web_video_server"
+
 
