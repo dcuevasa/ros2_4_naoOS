@@ -6,9 +6,6 @@ if [ ! -L /tmp/gentoo ]; then
 fi
 
 alias tree="tree -L 2"
-alias ..="cd .."
-alias ll="ls -l"
-alias cdws="cd ~/catkin_ros2"
 
 MACHINE_IP=$(ifconfig eth0 2>/dev/null | grep 'inet ' | cut -d: -f3 | awk '{ print $2}')
 if [ -z "$MACHINE_IP" ]
@@ -54,6 +51,7 @@ alias robot_driver="ros2 launch naoqi_driver naoqi_driver.launch.py nao_ip:=$ROS
 # Web services: WebSocket bridge (:9090 for roslibjs) and Video Streamer (:8080)
 alias rosbridge="ros2 launch rosbridge_server rosbridge_websocket_launch.xml"
 alias web_video="ros2 run web_video_server web_video_server"
+
 alias web_services="ros2 launch rosbridge_server rosbridge_websocket_launch.xml & ros2 run web_video_server web_video_server"
 
 alias pip='pip3'
@@ -78,19 +76,10 @@ function jazzy(){
     fi
 }
 
-# Backward compatibility alias
-function humble(){
-    jazzy
-}
-
 jazzy
 
 # Resolve shared library precedence between Python and ROS 2 libqi
 export LD_LIBRARY_PATH=/tmp/gentoo/usr/lib/python3.11/site-packages/qi:$LD_LIBRARY_PATH
-
-# Insulate host terminal tools from prefix library collisions
-alias nano="LD_LIBRARY_PATH= /usr/bin/nano"
-alias htop="LD_LIBRARY_PATH= /usr/bin/htop"
 
 # Middleware (RMW) selection helpers
 use_cyclone() {
@@ -101,9 +90,3 @@ use_fastrtps() {
     export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     echo "Active ROS 2 Middleware: eProsima Fast DDS ($RMW_IMPLEMENTATION)"
 }
-
-# Web integration aliases
-alias rosbridge="ros2 launch rosbridge_server rosbridge_websocket_launch.xml"
-alias web_video="ros2 run web_video_server web_video_server"
-
-
