@@ -146,9 +146,8 @@ RUN emerge app-arch/pxz app-arch/tar 2>/dev/null || true
 RUN cd /home/nao && tar -I pxz -c -f ./nao_os_jazzy.tar.lzma \
     -C /home/nao gentoo \
     -C /home/nao ros2_jazzy \
-    -C /home/nao .local \
+    -C /home/nao .local/share/scripts \
     -C /home/nao .bash_profile \
-    -C /home/nao naoqi \
     -C /home/nao catkin_ros2 || true && \
     ln -sf nao_os_jazzy.tar.lzma pepper_os.tar.lzma && \
     ln -sf nao_os_jazzy.tar.lzma pepper_os_jazzy.tar.lzma

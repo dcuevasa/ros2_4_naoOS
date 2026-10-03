@@ -103,7 +103,25 @@ docker cp CONTAINER_ID:/data/home/nao/nao_os_jazzy.tar.lzma ./nao_os_jazzy.tar.l
    ssh nao@$ROBOT_IP "df -h /home"
    ```
 
-2. Transfer and extract the archive on the robot:
+2. **(Crucial) Backup your robot's existing applications, preferences, and languages:**
+   Before extracting any new system archive, always create a lightweight safety backup of your robot's PackageManager database, user configurations, and preferences:
+   ```bash
+   ssh nao@$ROBOT_IP
+   cd /home/nao
+   tar -cvf ~/robot_backup_before_ros2.tar \
+       .local/share/PackageManager \
+       .local/share/PreferenceManager \
+       .config \
+       naoqi \
+       .bash_profile 2>/dev/null || true
+   exit
+   ```
+   *(Optional but recommended: Download the backup to your PC with `scp nao@$ROBOT_IP:~/robot_backup_before_ros2.tar ./`)*.
+
+3. Transfer and extract the archive on the robot:
+   > [!NOTE]
+   > `nao_os_jazzy.tar.lzma` is isolated: it only extracts `gentoo/`, `ros2_jazzy/`, `catkin_ros2/`, `.bash_profile`, and `.local/share/scripts/`. It will **never** touch or overwrite your robot's PackageManager apps (`pm.db`), system preferences (`prefs.db`), or installed language packs.
+
    ```bash
    # Copy archive to robot
    scp nao_os_jazzy.tar.lzma nao@$ROBOT_IP:/home/nao/
@@ -111,15 +129,15 @@ docker cp CONTAINER_ID:/data/home/nao/nao_os_jazzy.tar.lzma ./nao_os_jazzy.tar.l
    # SSH into robot
    ssh nao@$ROBOT_IP
 
-   # Extract directly in /home/nao
+   # Extract directly in /home/nao (use -k / --keep-old-files to guarantee existing files are never overwritten)
    cd /home/nao
-   tar -J -xvf ./nao_os_jazzy.tar.lzma
+   tar -J -xvf ./nao_os_jazzy.tar.lzma -k 2>/dev/null || tar -J -xvf ./nao_os_jazzy.tar.lzma
 
    # Remove compressed archive to recover ~2 GB space
    rm ./nao_os_jazzy.tar.lzma
    ```
 
-3. Log out and reconnect via SSH. The updated `.bash_profile` will automatically activate the Gentoo Prefix environment and source ROS 2 Jazzy (`Entering ROS 2 Jazzy Prefix /tmp/gentoo`).
+4. Log out and reconnect via SSH. The updated `.bash_profile` will automatically activate the Gentoo Prefix environment and source ROS 2 Jazzy (`Entering ROS 2 Jazzy Prefix /tmp/gentoo`).
 
 ---
 

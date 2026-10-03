@@ -141,6 +141,6 @@ USER nao
 SHELL ["/tmp/gentoo/executeonprefix"]
 
 # Parallel LZMA compression with pxz
-# RUN cd /home/nao && tar -c --lzma -f /tmp/nao_os_jazzy.tar.lzma -C /home/nao gentoo -C /home/nao ros2_jazzy -C /home/nao .local -C /home/nao .bash_profile -C /home/nao naoqi -C /home/nao catkin_ros2 || true
+# RUN cd /home/nao && tar -I pxz -c -f /tmp/nao_os_jazzy.tar.lzma -C /home/nao gentoo -C /home/nao ros2_jazzy -C /home/nao .local/share/scripts -C /home/nao .bash_profile -C /home/nao catkin_ros2 || true
 
 ENTRYPOINT ["/bin/bash"]
